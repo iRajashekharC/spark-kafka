@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Created by sunilpatil on 1/11/17.
  */
-public class SparkKafka10 {
+public class KafkaToSparkStream {
     public static void main(String[] argv) throws Exception{
 
         // Configure Spark to connect to Kafka running on local machine
@@ -41,7 +41,7 @@ public class SparkKafka10 {
         //Configure Spark to listen messages in topic test
         Collection<String> topics = Arrays.asList("fast-messages");
 
-        SparkConf conf = new SparkConf().setMaster("local[2]").setAppName("SparkKafka10WordCount").set("spark.driver.allowMultipleContexts", "true");
+        SparkConf conf = new SparkConf().setMaster("local[2]").setAppName("KafkaToSparkStream").set("spark.driver.allowMultipleContexts", "true");
 
         //Read messages in batch of 30 seconds
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(2));
