@@ -1,9 +1,13 @@
 package com.ingestion.realtime;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.*;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -37,7 +41,7 @@ public class SparkKafka10 {
         //Configure Spark to listen messages in topic test
         Collection<String> topics = Arrays.asList("fast-messages");
 
-        SparkConf conf = new SparkConf().setMaster("local[2]").setAppName("SparkKafka10WordCount");
+        SparkConf conf = new SparkConf().setMaster("local[2]").setAppName("SparkKafka10WordCount").set("spark.driver.allowMultipleContexts", "true");
 
         //Read messages in batch of 30 seconds
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(2));
@@ -81,8 +85,29 @@ public class SparkKafka10 {
 
         //Print the word count
         wordCount.print();
+        wordCount.foreachRDD(v1 -> {
+        	String kafkaOpTopic = "test-output";
+        	 Map<String, Object> props = new HashMap<String, Object>();
+        	 props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        	 props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                     "org.apache.kafka.common.serialization.StringSerializer");
+             props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                      "org.apache.kafka.common.serialization.StringSerializer");
+            
+             v1.foreach(record -> {
+            	 KafkaProducer<String, String>  producer1 = new KafkaProducer<>(props);
+            	 String data = record.toString();
+            	 ProducerRecord<String, String> message = new ProducerRecord<String, String>(kafkaOpTopic, null, data)   ;   
+            	 producer1.send(message);
+            	 producer1.close();
+             });
+             
 
+        });
+        
+        
         jssc.start();
         jssc.awaitTermination();
     }
+    
 }
